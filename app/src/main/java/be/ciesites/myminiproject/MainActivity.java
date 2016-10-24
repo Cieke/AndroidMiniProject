@@ -4,6 +4,8 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -28,6 +30,9 @@ import com.omertron.themoviedbapi.model.movie.MovieBasic;
 import com.omertron.themoviedbapi.results.ResultList;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import static be.ciesites.myminiproject.R.id.imageView;
 
@@ -37,6 +42,12 @@ public class MainActivity extends AppCompatActivity
     private TheMovieDbApi api ;
     private Configuration configuration;
     private ImageView imageView;
+    private RecyclerView recyclerView;
+    private List<MovieBasic> movieList = new ArrayList<>();
+
+    private MovieListAdapter movieListAdapter;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -61,8 +72,13 @@ public class MainActivity extends AppCompatActivity
         drawer.setDrawerListener(toggle);
         toggle.syncState();
 
+
+
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         DisplayImageOptions defaultOptions = new DisplayImageOptions.Builder()
                 .cacheInMemory(true)
@@ -81,7 +97,7 @@ public class MainActivity extends AppCompatActivity
         ImageLoader.getInstance().init(config);
 
         try {
-            api = new TheMovieDbApi(getString(R.string.stringKey));
+            api = new TheMovieDbApi(getString(R.string.stringKey)); // add your own key here
             FetchConfiguration fetchConfiguration = new FetchConfiguration();
             fetchConfiguration.execute();
             FetchMovieInfo fetchMovieInfo = new FetchMovieInfo();
@@ -92,6 +108,9 @@ public class MainActivity extends AppCompatActivity
             e.printStackTrace();
             Log.e("TheMovieDbApi", "Error: " +e.getMessage() );
         }
+
+
+
 
     }
 
@@ -166,6 +185,9 @@ public class MainActivity extends AppCompatActivity
         @Override
         protected void onPostExecute(Configuration configuration){
             MainActivity.this.configuration = configuration;
+
+            movieListAdapter = new MovieListAdapter(MainActivity.this, movieList, configuration);
+            recyclerView.setAdapter(movieListAdapter);
         }
 
 
@@ -185,16 +207,9 @@ public class MainActivity extends AppCompatActivity
         @Override
         protected void onPostExecute(ResultList<MovieBasic> movieBasicResultList){
             super.onPostExecute(movieBasicResultList);
-            try {
-                Log.v("Found", movieBasicResultList.toString());
-                URL imageUrl = configuration.createImageUrl(movieBasicResultList.getResults()
-                            .get(0).getBackdropPath(), "w780");
-                ImageLoader.getInstance().displayImage(imageUrl.toString(), imageView);
-
-            }catch (MovieDbException e){
-                e.printStackTrace();
-
-            }
+            movieList.clear();
+            movieList.addAll(movieBasicResultList.getResults());
+            movieListAdapter.notifyDataSetChanged();
         }
 
     }
