@@ -22,12 +22,12 @@ public class MovieListAdapter extends RecyclerView.Adapter<MovieViewHolder> {
 
     private Context context;
     private List<MovieBasic> movieList;
-    private Configuration configuration;
 
-    public MovieListAdapter(Context context, List<MovieBasic> movieList, Configuration configuration) {
+
+    public MovieListAdapter(Context context, List<MovieBasic> movieList) {
         this.context = context;
         this.movieList = movieList;
-        this.configuration = configuration;
+
     }
 
     @Override
@@ -43,14 +43,10 @@ public class MovieListAdapter extends RecyclerView.Adapter<MovieViewHolder> {
         holder.getTitleTextView().setText(currentMovie.getTitle());
         holder.getDescriptionTextView().setText(currentMovie.getOverview());
 
-        try{
-            URL imageUrl = configuration.createImageUrl(currentMovie.getPosterPath(), "w342");
-            ImageLoader.getInstance().displayImage(imageUrl.toString(), holder.getImageView());
+        URL imageUrl = null;
+        imageUrl = AppController.getInstance().createImageUrl(currentMovie.getPosterPath(), "w185");
+        ImageLoader.getInstance().displayImage(imageUrl.toString(), holder.getImageView());
 
-        }catch (MovieDbException e){
-            e.printStackTrace();
-
-        }
 
     }
 

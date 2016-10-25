@@ -35,16 +35,13 @@ import java.util.Collections;
 import java.util.List;
 
 import static be.ciesites.myminiproject.R.id.imageView;
+import static be.ciesites.myminiproject.R.id.recyclerView;
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener {
+        implements NavigationView.OnNavigationItemSelectedListener,
+        AppController.OnMovieListChangedListener{
 
-    private TheMovieDbApi api ;
-    private Configuration configuration;
-    private ImageView imageView;
     private RecyclerView recyclerView;
-    private List<MovieBasic> movieList = new ArrayList<>();
-
     private MovieListAdapter movieListAdapter;
 
 
@@ -54,7 +51,7 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        imageView = (ImageView) findViewById(R.id.imageView);
+
 
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -80,37 +77,25 @@ public class MainActivity extends AppCompatActivity
         recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        DisplayImageOptions defaultOptions = new DisplayImageOptions.Builder()
-                .cacheInMemory(true)
-                .cacheOnDisk(true)
-                .showImageForEmptyUri(R.drawable.ic_hourglass_empty_black_24dp)
-                .showImageOnLoading(R.drawable.ic_hourglass_empty_black_24dp)
-                .displayer(new FadeInBitmapDisplayer(500))
-                .build();
-
-        ImageLoaderConfiguration config =
-                new ImageLoaderConfiguration.Builder(getApplicationContext())
-                .defaultDisplayImageOptions(defaultOptions)
-                .denyCacheImageMultipleSizesInMemory()
-                .build();
-
-        ImageLoader.getInstance().init(config);
-
-        try {
-            api = new TheMovieDbApi(getString(R.string.stringKey)); // add your own key here
-            FetchConfiguration fetchConfiguration = new FetchConfiguration();
-            fetchConfiguration.execute();
-            FetchMovieInfo fetchMovieInfo = new FetchMovieInfo();
-            fetchMovieInfo.execute();   // type object: asynchtask
+        movieListAdapter = new MovieListAdapter(MainActivity.this, AppController.getInstance().getMovieList());
+        recyclerView.setAdapter(movieListAdapter);
 
 
-        } catch (MovieDbException e){
-            e.printStackTrace();
-            Log.e("TheMovieDbApi", "Error: " +e.getMessage() );
+
+    }
+
+
+    @Override
+    protected void onResume(){
+        super.onResume();
+        AppController.getInstance().addOnMovieListChangedListener(this);
+        movieListAdapter.notifyDataSetChanged();
         }
 
-
-
+    @Override
+    protected void onPause() {
+        super.onPause();
+        AppController.getInstance().removeOnMovieListChangedListener(this);
 
     }
 
@@ -171,47 +156,12 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
-    private class FetchConfiguration extends AsyncTask<Void, Void, Configuration>{
-        @Override
-        protected  Configuration doInBackground(Void... params){
-            try {
-                return api.getConfiguration();
-            }catch (MovieDbException e){
-                e.printStackTrace();
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Configuration configuration){
-            MainActivity.this.configuration = configuration;
-
-            movieListAdapter = new MovieListAdapter(MainActivity.this, movieList, configuration);
-            recyclerView.setAdapter(movieListAdapter);
-        }
-
+    @Override
+    public void onMovieListChanged() {
 
     }
-    private class FetchMovieInfo extends AsyncTask<Void, Void, ResultList<MovieBasic>>{
 
-        @Override
-        protected ResultList<MovieBasic> doInBackground(Void... params){
-            try{
-                return api.getDiscoverMovies(new Discover());
-            }catch (MovieDbException e){
-                e.printStackTrace();
-            }
-            return null;
-        }
 
-        @Override
-        protected void onPostExecute(ResultList<MovieBasic> movieBasicResultList){
-            super.onPostExecute(movieBasicResultList);
-            movieList.clear();
-            movieList.addAll(movieBasicResultList.getResults());
-            movieListAdapter.notifyDataSetChanged();
-        }
 
-    }
 
 }
