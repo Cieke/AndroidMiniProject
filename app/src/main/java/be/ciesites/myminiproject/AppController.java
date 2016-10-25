@@ -1,6 +1,7 @@
 package be.ciesites.myminiproject;
 
 import android.app.Application;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -13,6 +14,7 @@ import com.omertron.themoviedbapi.TheMovieDbApi;
 import com.omertron.themoviedbapi.model.config.Configuration;
 import com.omertron.themoviedbapi.model.discover.Discover;
 import com.omertron.themoviedbapi.model.movie.MovieBasic;
+import com.omertron.themoviedbapi.model.movie.MovieInfo;
 import com.omertron.themoviedbapi.results.ResultList;
 
 import java.net.URL;
@@ -28,8 +30,7 @@ public class AppController extends Application {
     private List<OnMovieListChangedListener> allListeners = new ArrayList<>();
     private TheMovieDbApi api ;
     private Configuration configuration;
-  //  private MovieListAdapter movieListAdapter;
-
+    private MovieInfo movieDetails;
 
     public static synchronized AppController getInstance() {
 
@@ -71,7 +72,10 @@ public class AppController extends Application {
         ImageLoader.getInstance().init(config);
 
     }
-
+    public void fetchOneMovie(int id){
+        FetchMovieDetails fetchIt = new FetchMovieDetails();
+        fetchIt.execute(id);
+    }
 
     private class FetchConfiguration extends AsyncTask<Void, Void, Configuration> {
         @Override
@@ -87,12 +91,11 @@ public class AppController extends Application {
         @Override
         protected void onPostExecute(Configuration configuration){
             AppController.this.configuration = configuration;
-
-
         }
-
-
     }
+
+
+
     private class FetchMovieInfo extends AsyncTask<Void, Void, ResultList<MovieBasic>>{
 
         @Override
@@ -113,8 +116,31 @@ public class AppController extends Application {
             notifyAllListeners();
         }
 
+
+
     }
 
+
+
+    private class FetchMovieDetails extends AsyncTask<Integer, Void, MovieInfo> {
+
+        @Override
+        protected MovieInfo doInBackground(Integer... params) {
+            try {
+                return api.getMovieInfo(params[0].intValue(), "en");
+            } catch (MovieDbException e1) {
+                e1.printStackTrace();
+            }
+            return null;
+        }
+        @Override
+        protected void onPostExecute(MovieInfo movieInfo) {
+            super.onPostExecute(movieInfo);
+            // todo intent movieDetails, pass through movieInfo in extras
+            Intent gogo = new Intent(getBaseContext(), MovieDetails.class);
+            gogo.putExtra("movieInfo", movieInfo);
+        }
+    }
 
     public List<MovieBasic> getMovieList(){
         return movieList;
